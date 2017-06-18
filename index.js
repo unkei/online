@@ -82,6 +82,21 @@ app.post('/webhook', function(req, res, next){
                     }
                 }
             );
+        } else if (event.type == 'postback'){
+            var answeredFood = JSON.parse(event.postback.data);
+            var botMemory = memory.get(event.source.userId);
+            botMemory.confirmedFoodList.push(answeredFood);
+            if (botMemory.toConfirmFoodList.length == 0 && botMemory.confirmedFoodList.length > 0){
+                console.log('Going to reply the total calorie.');
+                dietitian.replyTotalCalorie(event.replyToken, botMemory.confirmedFoodList);
+            } else if (botMemory.toConfirmFoodList.length > 0){
+                console.log('Going to ask which food the user had.');
+                dietitian.askWhichFood(event.replyToken, botMemory.toConfirmFoodList[0]);
+                botMemory.confirmedFoodList = botMemory.toConfirmFoodList[0];
+                botMemory.toConfirmFoodList.slice(0, 1);
+
+                memory.put(event.source.userId, botMemory);
+            }
         }
     }
 });
