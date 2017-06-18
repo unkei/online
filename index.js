@@ -9,6 +9,8 @@ var bodyParser = require('body-parser');
 var request = require('request');
 var mecab = require('mecabaas-client');
 var shokuhin = require('shokuhin-db');
+var memory = require('memory-cache');
+var dietitian = require('./dietitian');
 var app = express();
 
 // -----------------------------------------------------------------------------
@@ -50,10 +52,37 @@ app.post('/webhook', function(req, res, next){
                     }
                 }
             ).then(
-                function(response){
-                    console.log(response);
+                function(responseList){
+                    var botMemory = {
+                        confirmedFoodList: [],
+                        toConfirmFoodList: [],
+                        confirmingFood: null
+                    }
+                    for (var nutoritionList of responseList) {
+                        if (nutoritionList.length == 0){
+                            continue;
+                        } else if (nutoritionList.length == 1){
+                            botMemory.confirmedFoodList.push(nutoritionList[0]);
+                        } else if (nutoritionList.length > 1){
+                            botMemory.toConfirmFoodList.push(nutoritionList);
+                        }
+                    }
+
+                    if (botMemory.toConfirmFoodList.length == 0 && botMemory.confirmedFoodList.length > 0){
+                        console.log('Going to reply the total calorie.');
+                        dietitian.replyTotalCalorie(event.replyToken, botMemory.confirmedFoodList);
+                    } else if (botMemory.toConfirmFoodList.length > 0){
+                        console.log('Going to ask which food the user had.');
+                        dietitian.askWhichFood(event.replyToken, botMemory.toConfirmFoodList[0]);
+
+                        botMemory.confirmingFood = botMemory.toConfirmFoodList[0];
+                        botMemory.toConfirmFoodList.splice(0, 1);
+
+                        memory.put(event.source.userId, botMemory);
+                    }
                 }
             );
         }
     }
 });
+
