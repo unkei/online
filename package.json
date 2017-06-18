@@ -8,12 +8,19 @@
   },
   "author": "Keiichi Unno",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unkei/unline.git"
+  },
   "dependencies": {
+    "apiai": "^4.0.2",
+    "bluebird": "^3.5.0",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
     "mecabaas-client": "^1.0.2",
     "memory-cache": "^0.1.6",
     "request": "^2.81.0",
-    "shokuhin-db": "^1.0.2"
+    "shokuhin-db": "^1.0.2",
+    "uuid": "^3.1.0"
   }
 }

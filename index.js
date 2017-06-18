@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------
 // 定数の設定
 const LINE_CHANNEL_ACCESS_TOKEN = 'BdeFOkKnAjp4S53xFWgaMHhWcTC7eAsy3Vi8bTmhJE210DA+JGnfAmh7ir9tW+vxL4Cz4IgaHrK34A1cpXdroQH+2UUNq73mSVNFNbFE0Aik0c8M+roQsjYWHJGX77+6/4ITAiPPr8+HqcFsyRRl4QdB04t89/1O/w1cDnyilFU='
+const APIAI_CLIENT_ACCESS_TOKEN = '4edb1fbed53944b98d1fdda1691bf90a'
 
 // -----------------------------------------------------------------------------
 // モジュールのインポート
@@ -10,12 +11,18 @@ var request = require('request');
 var mecab = require('mecabaas-client');
 var shokuhin = require('shokuhin-db');
 var memory = require('memory-cache');
+var apiai = require('apiai');
+var uuid = require('uuid');
+var Promise = require('bluebird');
 var dietitian = require('./dietitian');
 var app = express();
 
 // -----------------------------------------------------------------------------
 // ミドルウェア設定
 app.use(bodyParser.json()); // 追加
+Promise.config({
+    cancellation: true
+});
 
 // -----------------------------------------------------------------------------
 // Webサーバー設定
@@ -34,8 +41,31 @@ app.post('/webhook', function(req, res, next){
     res.status(200).end();
     for (var event of req.body.events){
         if (event.type == 'message' && event.message.text){
-            mecab.parse(event.message.text)
-            .then(
+
+            var aiInstance = apiai(APIAI_CLIENT_ACCESS_TOKEN, {language:'ja'});
+            var aiRequest = aiInstance.textRequest(event.message.text, {sessionId: uuid.v1()});
+            var gotIntent = new Promise(function(resolve, reject){
+                aiRequest.on('response', function(response){
+                    resolve(response);
+                });
+                aiRequest.end();
+            });
+
+            var main = gotIntent.then(
+                function(response){
+                    console.log(response.result.action);
+                    switch (response.result.action){
+                        case 'recommendation':
+                            dietitian.replyRecommendation(event.replyToken);
+
+                            main.cancel();
+                            break;
+                        default:
+                            return mecab.parse(event.message.text);
+                            break;
+                    }
+                }
+            ).then(
                 function(response){
                     var foodList = [];
                     for (var elem of response){

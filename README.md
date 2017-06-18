@@ -13,5 +13,6 @@ $ npm install request --save
 $ npm install mecabaas-client --save
 $ npm install shokuhin-db --save
 $ npm install memory-cache --save
+$ npm install apiai uuid bluebird --save
 ```
 
