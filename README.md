@@ -10,5 +10,7 @@ $ npm init
 $ npm install express --save
 $ npm install body-parser --save
 $ npm install request --save
+$ npm install mecabaas-client --save
+$ npm install shokuhin-db --save
 ```
 

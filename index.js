@@ -7,6 +7,8 @@ const LINE_CHANNEL_ACCESS_TOKEN = 'BdeFOkKnAjp4S53xFWgaMHhWcTC7eAsy3Vi8bTmhJE210
 var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
+var mecab = require('mecabaas-client');
+var shokuhin = require('shokuhin-db');
 var app = express();
 
 // -----------------------------------------------------------------------------
@@ -29,30 +31,29 @@ app.get('/', function(req, res, next){
 app.post('/webhook', function(req, res, next){
     res.status(200).end();
     for (var event of req.body.events){
-        if (event.type == 'message'){
-            console.log(event.message);
-            if (event.message.text == 'ハロー') {
-                var headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + LINE_CHANNEL_ACCESS_TOKEN
+        if (event.type == 'message' && event.message.text){
+            mecab.parse(event.message.text)
+            .then(
+                function(response){
+                    var foodList = [];
+                    for (var elem of response){
+                        if (elem.length > 2 && elem[1] == '名詞'){
+                            foodList.push(elem);
+                        }
+                    }
+                    var gotAllNutrition = [];
+                    if (foodList.length > 0){
+                        for (var food of foodList){
+                            gotAllNutrition.push(shokuhin.getNutrition(food[0]))
+                        }
+                        return Promise.all(gotAllNutrition);
+                    }
                 }
-                var body = {
-                    'replyToken': event.replyToken,
-                    messages: [{
-                        type: 'text',
-                        text: 'こんにちはー'
-                    }]
+            ).then(
+                function(response){
+                    console.log(response);
                 }
-                var url = 'https://api.line.me/v2/bot/message/reply';
-                request({
-                    url: url,
-                    method: 'POST',
-                    headers: headers,
-                    body: body,
-                    json: true
-                });
-            }
+            );
         }
     }
 });
-
